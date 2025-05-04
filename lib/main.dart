@@ -104,6 +104,9 @@ Page resource error:
         }
       },
       child: Scaffold(
+        appBar: AppBar(
+          toolbarHeight: 10.0,
+        ),
         body: WebViewWidget(controller: _controller),
       ),
     );
