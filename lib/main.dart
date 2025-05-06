@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart'; // Import for SystemNavigator
 import 'package:webview_flutter/webview_flutter.dart';
+import 'package:google_mobile_ads/google_mobile_ads.dart';
 
 void main() {
+  WidgetsFlutterBinding.ensureInitialized();
+  MobileAds.instance.initialize();
   runApp(const MyApp());
 }
 
@@ -12,7 +15,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'FastPDFEdit Browser',
+      title: 'file edit tool',
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
         useMaterial3: true, // Recommended for modern dialogs
@@ -31,6 +34,8 @@ class WebViewScreen extends StatefulWidget {
 
 class _WebViewScreenState extends State<WebViewScreen> {
   late final WebViewController _controller;
+  InterstitialAd? _interstitialAd;
+  final String _adUnitId = 'ca-app-pub-1540095617189773/8531761941'; // Your Ad Unit ID
 
   @override
   void initState() {
@@ -54,11 +59,58 @@ Page resource error:
         ),
       )
       ..loadRequest(Uri.parse('https://www.fastpdfedit.com'));
+
+    _loadInterstitialAd(); // Load ad when the screen initializes
+  }
+
+  void _loadInterstitialAd() {
+    InterstitialAd.load(
+      adUnitId: _adUnitId,
+      request: const AdRequest(),
+      adLoadCallback: InterstitialAdLoadCallback(
+        onAdLoaded: (InterstitialAd ad) {
+          debugPrint('$ad loaded.');
+          _interstitialAd = ad;
+        },
+        onAdFailedToLoad: (AdError error) {
+          debugPrint('InterstitialAd failed to load: $error');
+          _interstitialAd = null;
+        },
+      ),
+    );
   }
 
   // Function to show the exit confirmation dialog
   Future<bool> _showExitDialog(BuildContext context) async {
-    return await showDialog<bool>(
+    // Show the ad if loaded before showing the exit dialog
+    if (_interstitialAd != null) {
+      _interstitialAd!.fullScreenContentCallback = FullScreenContentCallback(
+        onAdDismissedFullScreenContent: (InterstitialAd ad) {
+          debugPrint('$ad onAdDismissedFullScreenContent');
+          ad.dispose();
+          _interstitialAd = null;
+          // After ad is dismissed, show the exit dialog
+          _showExitConfirmation(context);
+        },
+        onAdFailedToShowFullScreenContent: (InterstitialAd ad, AdError error) {
+          debugPrint('$ad onAdFailedToShowFullScreenContent: $error');
+          ad.dispose();
+          _interstitialAd = null;
+          // If ad fails to show, show the exit dialog
+          _showExitConfirmation(context);
+        },
+      );
+      _interstitialAd!.show();
+      return false; // Prevent immediate exit, wait for ad callback
+    } else {
+      // If ad is not loaded, show the exit dialog directly
+      return await _showExitConfirmation(context);
+    }
+  }
+
+  // Function to show the actual exit confirmation dialog
+  Future<bool> _showExitConfirmation(BuildContext context) async {
+     return await showDialog<bool>(
           context: context,
           builder: (context) => AlertDialog(
             title: const Text('Exit App?'),
@@ -79,6 +131,12 @@ Page resource error:
   }
 
   @override
+  void dispose() {
+    _interstitialAd?.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     // Use PopScope to intercept back button presses
     return PopScope(
@@ -95,18 +153,15 @@ Page resource error:
           // If WebView can go back, navigate back within the WebView
           await _controller.goBack();
         } else {
-          // If WebView cannot go back, show the exit confirmation dialog
+          // If WebView cannot go back, show the exit confirmation dialog (which now handles showing the ad)
           final bool shouldExit = await _showExitDialog(context);
           if (shouldExit) {
-            // If user confirms exit, close the app
+            // If user confirms exit after the ad (or if ad wasn't shown), close the app
             await SystemNavigator.pop();
           }
         }
       },
       child: Scaffold(
-        appBar: AppBar(
-          toolbarHeight: 10.0,
-        ),
         body: WebViewWidget(controller: _controller),
       ),
     );
