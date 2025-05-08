@@ -1,8 +1,14 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <!-- Required to access the internet -->
     <uses-permission android:name="android.permission.INTERNET"/>
+    <!-- Required to read and write files -->
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"/>
+    <!-- Required for MANAGE_EXTERNAL_STORAGE permission (Android 11+) -->
+    <uses-permission android:name="android.permission.MANAGE_EXTERNAL_STORAGE"/>
 
     <application
+        android:requestLegacyExternalStorage="true"
         android:label="File edit"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
