@@ -17,7 +17,7 @@ void main() {
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({Key? key}) : super(key: key);
+  const MyApp({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -33,7 +33,7 @@ class MyApp extends StatelessWidget {
 }
 
 class WebViewScreen extends StatefulWidget {
-  const WebViewScreen({Key? key}) : super(key: key);
+  const WebViewScreen({super.key});
 
   @override
   _WebViewScreenState createState() => _WebViewScreenState();
@@ -169,17 +169,13 @@ class _WebViewScreenState extends State<WebViewScreen> {
 
     if (uri.scheme == 'data') {
       // Handle data URI
-      final UriData? data = UriData.fromUri(uri);
+      final UriData data = UriData.fromUri(uri);
       if (data != null) {
         final Uint8List fileBytes = data.contentAsBytes();
         String mimeType = data.mimeType;
         String fileExtension = _getExtensionFromMimeType(mimeType);
 
         fileName = downloadStartRequest.suggestedFilename ?? 'downloaded_file_${DateTime.now().millisecondsSinceEpoch}.$fileExtension';
-        if (downloadsDir == null) { // Should have been caught earlier, but double check
-             if (mounted) scaffoldMessenger.showSnackBar(const SnackBar(content: Text('Could not determine downloads directory.')));
-            return;
-        }
         filePath = '${downloadsDir.path}/$fileName';
 
         try {
@@ -208,10 +204,6 @@ class _WebViewScreenState extends State<WebViewScreen> {
       return; // Data URI handling finished
     } else {
       // Handle HTTP/HTTPS URLs with Dio
-      if (downloadsDir == null) { // Should have been caught earlier
-          if (mounted) scaffoldMessenger.showSnackBar(const SnackBar(content: Text('Could not determine downloads directory.')));
-          return;
-      }
       fileName = downloadStartRequest.suggestedFilename ?? Uri.decodeFull(uri.pathSegments.last);
       if (fileName.isEmpty) {
         fileName = "downloaded_file_${DateTime.now().millisecondsSinceEpoch}.bin"; // Fallback for http if no name
@@ -349,9 +341,6 @@ class _WebViewScreenState extends State<WebViewScreen> {
         }
       },
       child: Scaffold(
-<<<<<<< HEAD
-        body: WebViewWidget(controller: _controller),
-=======
         appBar: AppBar(
           title: const Text(
             'file edit tool',
@@ -425,7 +414,6 @@ Page resource error:
             return NavigationActionPolicy.ALLOW;
           },
         ),
->>>>>>> edit
       ),
     );
   }
